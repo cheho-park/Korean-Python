@@ -1,19 +1,33 @@
+import io
 import json
+import tokenize
 
-# 키워드 불러오기
 with open("keywords.json", "r", encoding="utf-8") as f:
     keywords = json.load(f)
 
-# kpy 파일 읽기
-with open("helloㅁㄴㅇㄹ.kpy", "r", encoding="utf-8") as f:
+with open("hello.kpy", "r", encoding="utf-8") as f:
     code = f.read()
 
-# 키워드 변환
-for k, v in keywords.items():
-    code = code.replace(k, v)
+tokens = tokenize.generate_tokens(io.StringIO(code).readline)
 
-print("변환된 코드:")
-print(code)
+new_tokens = []
 
-print("\n실행 결과:")
-exec(code) 
+for token in tokens:
+    token_type = token.type
+    token_string = token.string
+
+    if token_type == tokenize.NAME:
+        token_string = keywords.get(token_string, token_string)
+
+    new_tokens.append(
+        (
+            token_type,
+            token_string
+        )
+    )
+
+python_code = tokenize.untokenize(new_tokens)
+
+print(python_code)
+
+exec(python_code)
