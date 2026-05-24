@@ -1,33 +1,12 @@
-import io
-import json
-import tokenize
+from tokenizer import tokenize
+from parser import Parser
 
-with open("keywords.json", "r", encoding="utf-8") as f:
-    keywords = json.load(f)
+code = "반복 5번:"
 
-with open("hello.kpy", "r", encoding="utf-8") as f:
-    code = f.read()
+tokens = tokenize(code)
 
-tokens = tokenize.generate_tokens(io.StringIO(code).readline)
+parser = Parser(tokens)
 
-new_tokens = []
-
-for token in tokens:
-    token_type = token.type
-    token_string = token.string
-
-    if token_type == tokenize.NAME:
-        token_string = keywords.get(token_string, token_string)
-
-    new_tokens.append(
-        (
-            token_type,
-            token_string
-        )
-    )
-
-python_code = tokenize.untokenize(new_tokens)
+python_code = parser.parse()
 
 print(python_code)
-
-exec(python_code)
