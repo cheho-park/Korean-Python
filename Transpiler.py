@@ -1,25 +1,25 @@
 import io
 import json
 import tokenize
-import re
+# import re
 
 with open("keywords.json", "r", encoding="utf-8") as f:
     keywords = json.load(f)
 
 def transpile(code: str) -> str:
-    # Apply replacements sequentially
-    code = re.sub(
-        r"반복\s+(\d+)번:",
-        r"for _ in range(\1):",
-        code
-        )
-    print(code)
-    code = re.sub(
-        r"만약\s+([^\s]+)\s+(?:는|은)\s+([^\s]+)\s+보다\s+크면:",
-        r"if \1 > \2:",
-        code
-    )
-    print(code)
+    # # Apply replacements sequentially
+    # code = re.sub(
+    #     r"반복\s+(\d+)번:",
+    #     r"for _ in range(\1):",
+    #     code
+    #     )
+    # print(code)
+    # code = re.sub(
+    #     r"만약\s+([^\s]+)\s+(?:는|은)\s+([^\s]+)\s+보다\s+크면:",
+    #     r"if \1 > \2:",
+    #     code
+    # )
+    # print(code)
 
     tokens = tokenize.generate_tokens(io.StringIO(code).readline)
 
