@@ -1,44 +1,36 @@
-from parser_1 import Parser
+from pathlib import Path
 import sys
 
-
-# 간단한 tokenizer
-def tokenize(code):
-    return code.split()
+from Transpiler import transpile
 
 
 def main():
-    # 파일 인자 확인
-    # if len(sys.argv) < 2:
-    #     print("사용법: python main.py 파일.kpy")
-    #     return
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
-    # filename = sys.argv[1]
-    filename = "hello.kpy"
+    filename = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("hello.kpy")
 
-    # 파일 읽기
-    with open(filename, "r", encoding="utf-8") as f:
-        code = f.read()
+    if not filename.exists():
+        print(f"파일을 찾을 수 없습니다: {filename}")
+        return 1
 
-    # 토큰화
-    tokens = tokenize(code)
+    code = filename.read_text(encoding="utf-8")
+    python_code = transpile(code)
 
-    print("=== TOKENS ===")
-    print(tokens)
-
-    # 파싱
-    parser = Parser(tokens)
-
-    python_code = parser.parse()
-
-    print("\n=== PYTHON CODE ===")
+    print("=== PYTHON CODE ===")
     print(python_code)
-
     print("\n=== OUTPUT ===")
 
-    # 실행
-    exec(python_code)
+    try:
+        exec(compile(python_code, str(filename), "exec"), {"__name__": "__main__"})
+    except EOFError:
+        print("표준 입력이 필요하지만 현재 입력이 비어 있습니다.")
+        return 2
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
