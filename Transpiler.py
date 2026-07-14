@@ -41,12 +41,19 @@ def transpile(code: str) -> str:
     new_tokens = []
 
     for token in tokens:
-        token_type = token.type
         token_string = token.string
 
-        if token_type == tokenize.NAME:
+        if token.type == tokenize.NAME:
             token_string = keywords.get(token_string, token_string)
 
-        new_tokens.append((token_type, token_string))
+        new_tokens.append(
+            tokenize.TokenInfo(
+                token.type,
+                token_string,
+                token.start,
+                token.end,
+                token.line,
+            )
+        )
 
     return tokenize.untokenize(new_tokens)
