@@ -34,16 +34,25 @@ def main():
 
     filename = Path(args.source)
 
-    if not filename.exists():
+    if not filename.exists() or not filename.is_file():
         print(f"파일을 찾을 수 없습니다: {filename}")
         return 1
 
-    code = filename.read_text(encoding="utf-8")
+    try:
+        code = filename.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"파일을 읽는 동안 오류가 발생했습니다: {exc}")
+        return 1
+
     python_code = transpile(code)
 
     output_path = Path(args.out) if args.out else filename.with_suffix(".py")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(python_code, encoding="utf-8")
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(python_code, encoding="utf-8")
+    except OSError as exc:
+        print(f"출력 파일을 생성하는 동안 오류가 발생했습니다: {exc}")
+        return 1
 
     print(f"생성 완료: {output_path}")
 
@@ -54,6 +63,9 @@ def main():
         except EOFError:
             print("표준 입력이 필요하지만 현재 입력이 비어 있습니다.")
             return 2
+        except Exception as exc:
+            print(f"생성된 코드 실행 중 오류가 발생했습니다: {exc}")
+            return 1
 
     return 0
 
