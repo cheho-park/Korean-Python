@@ -23,6 +23,16 @@ class MainTest(unittest.TestCase):
                 self.assertTrue(output_path.exists())
                 self.assertIn("print(\"hi\")", output_path.read_text(encoding="utf-8"))
 
+    def test_invalid_generated_python_is_not_written(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source_path = Path(temp_dir) / "invalid.kpy"
+            output_path = Path(temp_dir) / "output.py"
+            source_path.write_text("만약 참\n    출력(\"hi\")\n", encoding="utf-8")
+
+            with mock.patch.object(sys, "argv", ["main.py", str(source_path), "-o", str(output_path)]):
+                self.assertEqual(main.main(), 1)
+                self.assertFalse(output_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

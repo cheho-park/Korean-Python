@@ -69,6 +69,23 @@ _BUILTIN_CALL_NAMES = {
 }
 
 
+class KpySyntaxError(Exception):
+    """`.kpy` 소스를 토큰으로 읽을 수 없을 때 발생하는 오류."""
+
+    def __init__(self, message: str, line: Optional[int] = None, column: Optional[int] = None):
+        self.message = message
+        self.line = line
+        self.column = column
+
+        location = ""
+        if line is not None:
+            location = f" (줄 {line}"
+            if column is not None:
+                location += f", 열 {column}"
+            location += ")"
+        super().__init__(f"{message}{location}")
+
+
 def _rewrite_line(code_line: str) -> str:
     repeat_match = _repeat_pattern.match(code_line)
     if repeat_match:
@@ -112,15 +129,22 @@ def _preprocess(code: str) -> str:
     lines = []
     multiline_state: Optional[str] = None
 
-    for line in code.splitlines():
-        if multiline_state is None:
-            lines.append(_rewrite_line(line))
+    for raw_line in code.splitlines(keepends=True):
+        if raw_line.endswith("\r\n"):
+            line, line_ending = raw_line[:-2], "\r\n"
+        elif raw_line.endswith(("\n", "\r")):
+            line, line_ending = raw_line[:-1], raw_line[-1]
         else:
-            lines.append(line)
+            line, line_ending = raw_line, ""
+
+        if multiline_state is None:
+            lines.append(_rewrite_line(line) + line_ending)
+        else:
+            lines.append(line + line_ending)
 
         multiline_state = _scan_multiline_string_state(line, multiline_state)
 
-    return "\n".join(lines)
+    return "".join(lines)
 
 
 def _previous_meaningful_token(tokens, index: int):
@@ -173,8 +197,15 @@ def _should_translate_name(token_string: str, tokens, index: int) -> bool:
 
 def transpile(code: str) -> str:
     code = _preprocess(code)
-
-    tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    except tokenize.TokenError as exc:
+        message, (line, column) = exc.args
+        raise KpySyntaxError(f"토큰 처리 오류: {message}", line, column) from exc
+    except (IndentationError, SyntaxError) as exc:
+        line = getattr(exc, "lineno", None)
+        column = getattr(exc, "offset", None)
+        raise KpySyntaxError(f"들여쓰기 또는 문법 오류: {exc.msg}", line, column) from exc
     new_tokens = []
 
     for index, token in enumerate(tokens):

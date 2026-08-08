@@ -42,6 +42,17 @@ class TranspilerTest(unittest.TestCase):
         self.assertIn("int(input())", result)
         self.assertIn("print(숫자)", result)
 
+    def test_keywords_do_not_change_comments_or_strings(self):
+        code = '''출력("만약 반복 반환")  # 출력(참)\n'''
+
+        result = Transpiler.transpile(code)
+
+        self.assertEqual(result, 'print("만약 반복 반환")  # 출력(참)\n')
+
+    def test_unclosed_multiline_string_has_clear_error(self):
+        with self.assertRaisesRegex(Transpiler.KpySyntaxError, "토큰 처리 오류"):
+            Transpiler.transpile("text = '''닫히지 않음")
+
     def test_keyword_file_loads_from_module_path(self):
         module_path = Path(__file__).resolve().parent.parent / "Transpiler.py"
         current_dir = os.getcwd()

@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import argparse
 
-from Transpiler import transpile
+from Transpiler import KpySyntaxError, transpile
 
 
 def main():
@@ -44,7 +44,20 @@ def main():
         print(f"파일을 읽는 동안 오류가 발생했습니다: {exc}")
         return 1
 
-    python_code = transpile(code)
+    try:
+        python_code = transpile(code)
+        # 파일을 만들기 전에 결과가 Python 문법인지 확인한다. 전처리 단계가 줄 수를
+        # 유지하므로 오류 줄 번호는 원본 .kpy 파일과 동일하다.
+        compile(python_code, str(filename), "exec")
+    except KpySyntaxError as exc:
+        print(f"변환 중 오류: {exc}")
+        return 1
+    except SyntaxError as exc:
+        location = f"{exc.lineno}번째 줄"
+        if exc.offset is not None:
+            location += f", {exc.offset}번째 열"
+        print(f"Python 문법 오류 ({location}): {exc.msg}")
+        return 1
 
     output_path = Path(args.out) if args.out else filename.with_suffix(".py")
     try:
